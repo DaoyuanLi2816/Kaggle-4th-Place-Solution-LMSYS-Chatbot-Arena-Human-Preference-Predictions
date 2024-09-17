@@ -125,6 +125,8 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 - **Inference and Post-Processing**: Implemented a TTA strategy to improve inference results and applied specific post-processing
 
 
-## Contact
+## Author and Contact
 
-For any questions or issues, please contact Daoyuan Li at lidaoyuan2816@gmail.com.
+Daoyuan Li - [Kaggle Profile](https://www.kaggle.com/distiller)
+
+For any questions, please contact Daoyuan Li at lidaoyuan2816@gmail.com.
