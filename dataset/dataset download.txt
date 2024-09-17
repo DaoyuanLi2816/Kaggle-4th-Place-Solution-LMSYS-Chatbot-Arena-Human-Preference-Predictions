@@ -7,5 +7,5 @@ https://www.kaggle.com/competitions/lmsys-chatbot-arena/data
 33k deduplicated dataset:
 https://www.kaggle.com/code/abdullahmeda/33k-lmsys-chatbot-arena-conversations/output
 
-ultrafeedback dataset:
+ultra feedback dataset:
 https://www.kaggle.com/datasets/thedrcat/llm-human-preference-data-ultrafeedback/data
