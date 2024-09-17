@@ -1,0 +1,53 @@
+general:
+  seed: 42
+  num_workers: 8
+  suffix: "08040309"
+
+data:
+  parquet_path: "./input/all_cleaned.parquet"
+  pl_csv_path: "./input/ultrafeedback_pl.csv" ####
+  # pl_csv_path: none
+  use_55k: true
+  use_33k: true
+  
+  n_splits: 20
+  fold_idx: 0
+  fixed_val_ids: true
+
+  tokenzier_prompt_func: "tokenize_cls_p3" # tokenize_cls_p2 tokenize_gen_p2
+  padding_side: "right"
+  truncation_side: "left"
+
+
+model:
+  model_name: "./input/gemma-2-9b-it" # llama3-8b-instruct gemma-2-9b-it ./input/gemma-2-9b-it ./output/08040309/merged_model ####
+  model_type: "classification" # generation or classification
+  max_length: 2048
+  use_softcapping: false
+  
+  freeze_layers: 0
+  lora_r: 64
+  lora_alpha: 4
+  lora_dropout: 0.05
+  lora_bias: "none"
+  lora_target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+
+training:
+  amp: "bf16" # "fp16" or "bf16"
+  optim_type: "adamw_8bit" # adamw_8bit adamw_hf
+  
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  n_epochs: 1
+  
+  lr: 0.0002
+  warmup_steps: 20 

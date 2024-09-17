@@ -1,0 +1,11 @@
+gemma-2-9b-it 模型
+https://huggingface.co/google/gemma-2-9b-it
+
+Kaggle官方数据
+https://www.kaggle.com/competitions/lmsys-chatbot-arena/data
+
+33k去重数据
+https://www.kaggle.com/code/abdullahmeda/33k-lmsys-chatbot-arena-conversations/output
+
+ultrafeedback数据
+https://www.kaggle.com/datasets/thedrcat/llm-human-preference-data-ultrafeedback/data
