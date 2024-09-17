@@ -123,3 +123,8 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 - **Data Processing**: Utilized 88k official and deduplicated data, performed 20-fold cross-validation (trained on one fold only), and created pseudo-labels for ultrafeedback data, expanding the dataset to over 100,000 entries.
 - **Model Optimization**: Fine-tuned the **Gemma2ForSequenceClassification** model using LoRA and performed a three-class classification task. Unique prompt design improved handling of long conversation truncations.
 - **Inference and Post-Processing**: Implemented a TTA strategy to improve inference results and applied specific post-processing
+
+
+## Contact
+
+For any questions or issues, please contact Daoyuan Li at lidaoyuan2816@gmail.com.
