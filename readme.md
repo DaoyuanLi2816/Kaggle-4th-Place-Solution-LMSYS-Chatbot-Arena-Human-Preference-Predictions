@@ -5,7 +5,7 @@ This solution was developed for the **LMSYS - Chatbot Arena Human Preference Pre
 
 Our team successfully placed **4th out of 1849 teams**, earning a **Gold Medal** for our solution! 🏅
 
-![Daoyuan Li - LMSYS - Chatbot Arena Human Preference Predictions](Daoyuan_Li_-_LMSYS_-_Chatbot_Arena_Human_Preference_Predictions.png)
+![Daoyuan Li - LMSYS](./Daoyuan%20Li%20-%20LMSYS%20-%20Chatbot%20Arena%20Human%20Preference%20Predictions.png)
 
 ## Data
 First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the ultrafeedback dataset to further supplement the dataset.
