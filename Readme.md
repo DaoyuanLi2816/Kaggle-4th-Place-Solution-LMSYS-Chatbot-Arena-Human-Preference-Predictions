@@ -1,16 +1,13 @@
-# LMSYS - Chatbot Arena Human Preference Predictions 解决方案
 
+# LMSYS - Chatbot Arena Human Preference Prediction Solution
 
+### Data
 
-### 数据
+First, we used the official dataset (55k) combined with 33k de-duplicated data, applying a 20-fold cross-validation (n_splits=20), but only trained one fold to ensure the inclusion of as much training data as possible. Additionally, we created pseudo-labels for 30k entries from the `ultrafeedback` dataset, serving as an augmentation to the dataset.
 
-首先，使用了官方数据(55k) + 33k去重 数据，fold  n_splits=20，只训练了其中一折，尽量保证更多训练数据。其次，为 `ultrafeedback` 数据中的3万条数据做了伪标签，作为更多数据集的补充。
+### Prompt
 
-
-
-### prompt
-
-设计了独特的prompt，这个prompt的好处是，当对话长度超过max_length时，可以较为合理的截断最后一轮对话，保证了prompt、response_a、response_b 都有一定比例可以展现，避免了最后一轮只会截断到 prompt 或者 response_a 的情况。甚至设定了，如果最后一轮所剩的token数量小于80，会直接丢掉该轮(以及其后面)的对话。这些阈值和比例均通过观察训练集做出的判断。
+We designed a unique prompt. The advantage of this prompt is that when the conversation length exceeds the maximum token limit (`max_length`), it can reasonably truncate the last round of the dialogue. This ensures that the prompt, `response_a`, and `response_b` all have a proportional representation, avoiding scenarios where only the prompt or `response_a` is truncated. We also set a rule: if the remaining token count in the last round is less than 80, we discard that round (and any following dialogues). These thresholds and ratios were determined based on observations from the training set.
 
 ```python
 def tokenize_cls_p3(example, tokenizer, max_length, is_train):
@@ -22,97 +19,46 @@ def tokenize_cls_p3(example, tokenizer, max_length, is_train):
         one_input_ids = [tokenizer.bos_token_id]
         prev_tokens_num = 2 + len(final_p_tokens) # 2 for bos_token and eos_token
         for idx, (p, ra, rb) in enumerate(zip(ps, ras, rbs)):
-            r_tokens  = tokenizer(f'\n\n## Round {idx+1}:' if idx else f'## Round {idx+1}:', add_special_tokens=False)["input_ids"]
-            p_tokens  = tokenizer(f'\n### Prompt:\n{p}', add_special_tokens=False)["input_ids"]
+            r_tokens = tokenizer(f'\n\n## Round {idx+1}:' if idx else f'## Round {idx+1}:', add_special_tokens=False)["input_ids"]
+            p_tokens = tokenizer(f'\n### Prompt:\n{p}', add_special_tokens=False)["input_ids"]
             ra_tokens = tokenizer(f'\n\n### Response A:\n{ra}', add_special_tokens=False)["input_ids"]
             rb_tokens = tokenizer(f'\n\n### Response B:\n{rb}', add_special_tokens=False)["input_ids"]
             all_tokens_num = prev_tokens_num + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens)
 
             if all_tokens_num > max_length:
-                remain_tokens_num = max_length - prev_tokens_num - len(r_tokens) - 3*len(dot_tokens) 
+                remain_tokens_num = max_length - prev_tokens_num - len(r_tokens) - 3*len(dot_tokens)
                 if remain_tokens_num >= 80:
-                    p_tokens  =  p_tokens[:int(remain_tokens_num*0.2)] + dot_tokens if len( p_tokens) > int(remain_tokens_num*0.2) else  p_tokens
-                    ra_tokens = ra_tokens[:int(remain_tokens_num*0.4)] + dot_tokens if len(ra_tokens) > int(remain_tokens_num*0.4) else ra_tokens
-                    rb_tokens = rb_tokens[:int(remain_tokens_num*0.4)] + dot_tokens if len(rb_tokens) > int(remain_tokens_num*0.4) else rb_tokens
-                    one_input_ids += r_tokens + p_tokens + ra_tokens + rb_tokens
-                break
-            else:
-                prev_tokens_num = all_tokens_num
-                one_input_ids += r_tokens + p_tokens + ra_tokens + rb_tokens
-        
-        one_input_ids += final_p_tokens + [tokenizer.eos_token_id]
-        one_attention_mask = [1] * len(one_input_ids)
-
+                    p_tokens = p_tokens[:int(remain_tokens_num*0.2)] + dot_tokens if len(p_tokens) > int(remain_tokens_num*0.2) else p_tokens
+                    ra_tokens = ra_tokens[:int(remain_tokens_num*0.4)] if len(ra_tokens) > int(remain_tokens_num*0.4) else ra_tokens
+                    rb_tokens = rb_tokens[:int(remain_tokens_num*0.4)] if len(rb_tokens) > int(remain_tokens_num*0.4) else rb_tokens
+                else:
+                    continue
+            one_input_ids.extend(r_tokens + p_tokens + ra_tokens + rb_tokens)
+        one_input_ids.append(tokenizer.eos_token_id)
         input_ids.append(one_input_ids)
-        attention_mask.append(one_attention_mask)
-    
-    if is_train:
-        labels = [0 if a_win else 1 if b_win else 2 for a_win, b_win, tie in zip(example['winner_model_a'], example['winner_model_b'], example['winner_tie'])]
-
-        return {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "labels": labels,
-        }
-    else:
-        return {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-        }
+        attention_mask.append([1]*len(one_input_ids))
+    return input_ids, attention_mask
 ```
 
+### Model
 
+We fine-tuned the `Gemma2ForSequenceClassification` model using LoRA on a three-way classification task, with the categories being `response_a` better, `response_b` better, or a tie. We did not apply any tricks in this phase, merely leveraging the designed prompt to ensure the appropriate truncation of long dialogues.
 
-### 训练
+In the second phase, we created pseudo-labels for the `ultrafeedback` data (30k samples), then combined this with the first-phase data (over 100k in total) to train a model from scratch.
 
-**模型** 
+Each experiment took approximately 10 hours in the first phase and 15 hours in the second phase on a 4x A100 40G setup.
 
-选择`gemma-2-9b-it`，作为起始模型，比其他模型 Llama3 8b 和 Llama3.1 8b 都要好太多了。
+### Inference and Post-processing
 
-使用的是 `Gemma2ForSequenceClassification` 3分类，然后lora bf16对模型进行finetune，最终最高分的实验在4张A100上完成。
+The inference code is largely the same as the training code, with some differences. During inference, we raised `max_length` to 3072 and swapped `response_a` and `response_b` for test-time augmentation (TTA), averaging the results from both configurations.
 
-max_length ： 2048
+We applied post-processing in two scenarios (there is some overlap between the two):
 
-**Lora具体参数**
+1. If `response_a` or `response_b` is empty (e.g., '[null]', '[]', '[ ]'), we assumed the non-empty response was the winner. However, due to the sensitivity of the log loss to extreme values and the noise in the labels, we fixed the predictions for empty, non-empty, and tie situations to [0.04, 0.88, 0.08] based on observations from the training set.
 
-```python
-  freeze_layers: 0
-  lora_r: 64
-  lora_alpha: 16
-  lora_dropout: 0.05
-  lora_bias: "none"
-  lora_target_modules:
-    - "q_proj"
-    - "k_proj"
-    - "v_proj"
-    - "o_proj"
-    - "gate_proj"
-    - "up_proj"
-    - "down_proj"
-```
+2. If `response_a` and `response_b` are identical, we assumed it was a tie and fixed the prediction values to [0.06, 0.06, 0.88].
 
-**流程**
-
-1. 第一阶段：使用了官方数据(55k) + 33k去重 数据， fold n_splits=20，并且只训练了其中一折。
-2. 第二阶段：使用第一阶段的模型，为 `ultrafeedback` (采样了3万条数据) 做了伪标签，然后与第一阶段的数据合并（总共10万+），从头训练一个模型。
-
-在4*A100 40G上，每次实验，第一阶段花费10小时左右，第二阶段花费15小时左右
-
-
-
-
-
-### 推理阶段和后处理
-
-推理阶段的代码与训练阶段的代码结构大体上相同，一些不同点在于，在推理阶段将max_length 提升至 3072，其次交换了response_a和response_b 作为tta，最终结果为两者输出的平均值。
-
-针对两种情况进行了后处理（两种情况之间也会有重叠）
-
-1. response_a 或者 response_b 为空，也就是说 类似 '[null]', '[]', '[ ]' 等等这样的情况，理所应当的认为不为空的那个response应该是获胜者，但又因为本次比赛的log loss对于极端值非常敏感，标签又有一定的噪音，所以通过观察训练集将空、不空、平局三者的预测值固定为 [0.04, 0.88, 0.08]。
-
-2. response_a 与 response_b 相同，这种情况理应是平局，所以将预测值固定为 [0.06, 0.06, 0.88]
-
-后处理具体代码如下：
+The post-processing code is as follows:
 
 ```python
 df2 = pd.read_csv('/kaggle/input/lmsys-chatbot-arena/test.csv')
@@ -122,26 +68,21 @@ a_null_df = df2[(df2["response_a"]== '[null]') | (df2["response_a"]== '[]') | (d
 a_null_id_list = a_null_df["id"].tolist()
 submission_df.loc[submission_df['id'].isin(a_null_id_list), ['winner_model_a', 'winner_model_b', 'winner_tie']] = [0.04, 0.88, 0.08]
 
-
 b_null_df = df2[(df2["response_b"]== '[null]') | (df2["response_b"]== '[]') | (df2["response_b"]== '[ ]') | (df2["response_b"]== '[  ]') | (df2["response_b"]== '[""]') | (df2["response_b"]== '["",""]')]
 b_null_id_list = b_null_df["id"].tolist()
 submission_df.loc[submission_df['id'].isin(b_null_id_list), ['winner_model_a', 'winner_model_b', 'winner_tie']] = [0.88, 0.04, 0.08]
-
 
 same_a_b_df2 = df2[(df2["response_a"]==df2["response_b"])]
 same_a_b_id_list = same_a_b_df2["id"].tolist()
 submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a', 'winner_model_b', 'winner_tie']] = [0.06, 0.06, 0.88]
 ```
 
+### Summary
 
+**Overview**: We developed and optimized a chatbot preference prediction model based on the `gemma-2-9b-it` model, improving the prediction accuracy of user preferences in chatbot responses.
 
-### 总结
+**Key Techniques**:
 
-**概述**： 开发并优化了一种基于`gemma-2-9b-it`模型的对话系统偏好预测模型，提升了对话系统中用户偏好回复的预测精度。
-
-**关键技术**：
-
-- **数据处理**：使用88k官方和去重数据，20折交叉验证，仅训练一折，并为ultrafeedback数据伪标签扩展至10万+数据集。
-- **模型优化**：通过LoRA微调`Gemma2ForSequenceClassification`模型，采用三分类任务，结合独特prompt设计，提升长对话截断处理效果。
-- **推理与后处理**：采用TTA策略提升推理效果，并根据空回复和平局情况进行特定后处理，优化模型表现。
-
+- **Data Processing**: Used 88k official and de-duplicated data, performed 20-fold cross-validation, trained only one fold, and created pseudo-labels for the `ultrafeedback` dataset, expanding it to over 100k samples.
+- **Model Optimization**: Fine-tuned the `Gemma2ForSequenceClassification` model using LoRA, applied a unique prompt design, and improved handling of long dialogue truncations.
+- **Inference and Post-processing**: Employed TTA to enhance inference results and applied specific post-processing for empty responses and ties, optimizing the model's performance.
