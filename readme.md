@@ -1,6 +1,12 @@
 
 # LMSYS - Chatbot Arena Human Preference Prediction Solution
 
+This solution was developed for the **LMSYS - Chatbot Arena Human Preference Predictions** competition on Kaggle, where participants were challenged to predict user preferences in head-to-head conversations between chatbots powered by large language models (LLMs). The task involved utilizing a dataset from **Chatbot Arena**, in which users interact with two anonymous LLMs and choose their preferred response. By creating a machine learning model that accurately predicts these preferences, we aimed to contribute to improving the alignment of chatbot responses with human preferences.
+
+Our team successfully placed **4th out of 1849 teams**, earning a **Gold Medal** for our solution! 🏅
+
+![Daoyuan Li - LMSYS - Chatbot Arena Human Preference Predictions](Daoyuan_Li_-_LMSYS_-_Chatbot_Arena_Human_Preference_Predictions.png)
+
 ## Data
 First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the ultrafeedback dataset to further supplement the dataset.
 
