@@ -11,7 +11,7 @@ Our team successfully placed **4th out of 1849 teams**, earning a [Gold Medal](h
 First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the ultrafeedback dataset to further supplement the dataset.
 
 ## Prompt
-We designed a unique prompt, which is beneficial because when the dialogue length exceeds the maximum token length (`max_length`), it allows for a reasonable truncation of the final round of conversation. This ensures that the prompt, response A, and response B can all be adequately displayed, avoiding situations where only the prompt or response A gets truncated. If the remaining token count in the final round is less than 80, the entire conversation round (and the subsequent ones) will be discarded. Th...
+We designed a unique prompt, which is beneficial because when the dialogue length exceeds the maximum token length (`max_length`), it allows for a reasonable truncation of the final round of conversation. This ensures that the prompt, response A, and response B can all be adequately displayed, avoiding situations where only the prompt or response A gets truncated. If the remaining token count in the final round is less than 80, the entire conversation round (and the subsequent ones) will be discarded. These thresholds and proportions were determined through observation of the training set.
 
 ```python
 def tokenize_cls_p3(example, tokenizer, max_length, is_train):
