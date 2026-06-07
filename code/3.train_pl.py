@@ -71,7 +71,7 @@ write_to_summary_log(summary_log_path,  base_info)
 LOGGER.info(base_info)
 
 num_gpus = torch.cuda.device_count()
-LOGGER.info(f"可用的 GPU 数量: {num_gpus}")
+LOGGER.info(f"Number of available GPUs: {num_gpus}")
 
 # %% ========= Read Data =========
 if os.path.exists(cfg.data.parquet_path):
@@ -81,8 +81,8 @@ else:
     LOGGER.info(f"Reading data from csv files...")
     if cfg.data.use_55k:
         df_55k = pd.read_csv(f'{input_dir}/lmsys-chatbot-arena/train.csv', encoding='utf-8')
-        df_55k = df_55k[~((df_55k["response_a"]== '[null]') & (df_55k["response_b"]== '[null]'))] # 去掉response_a和response_b都是null的数据
-        df_55k = df_55k[~(df_55k["response_a"]==df_55k["response_b"])] # 去掉response_a和response_b相同的数据
+        df_55k = df_55k[~((df_55k["response_a"]== '[null]') & (df_55k["response_b"]== '[null]'))] # Drop rows where both response_a and response_b are null
+        df_55k = df_55k[~(df_55k["response_a"]==df_55k["response_b"])] # Drop rows where response_a and response_b are identical
 
         a_null_df = df_55k[(df_55k["response_a"]== '[null]') | (df_55k["response_a"]== '[]') | (df_55k["response_a"]== '[ ]') | (df_55k["response_a"]== '[  ]') | (df_55k["response_a"]== '[""]') | (df_55k["response_a"]== '["",""]')]
         a_null_id_list = a_null_df["id"].tolist()
@@ -98,7 +98,7 @@ else:
 
     if cfg.data.use_33k:
         df_33k = pd.read_csv(f'{input_dir}/lmsys-33k/lmsys-33k-deduplicated.csv', encoding='utf-8')
-        df_33k = df_33k[~(df_33k["response_a"]==df_33k["response_b"])] # 去掉response_a和response_b相同的数据
+        df_33k = df_33k[~(df_33k["response_a"]==df_33k["response_b"])] # Drop rows where response_a and response_b are identical
 
         a_null_df = df_33k[(df_33k["response_a"]== '[null]') | (df_33k["response_a"]== '[]') | (df_33k["response_a"]== '[ ]') | (df_33k["response_a"]== '[  ]') | (df_33k["response_a"]== '[""]') | (df_33k["response_a"]== '["",""]')]
         a_null_id_list = a_null_df["id"].tolist()
@@ -179,24 +179,24 @@ def tokenize_cls_p3(example, tokenizer, max_length):
     dot_tokens = tokenizer("......", add_special_tokens=False)["input_ids"]
     final_p_tokens = tokenizer("\n\n---\nWhich response is better? [A or B or tie]\nAnswer: ", add_special_tokens=False)["input_ids"]
     for ps, ras, rbs in zip(example['prompt'], example['response_a'], example['response_b']):
-        one_input_ids = [tokenizer.bos_token_id] # 一个样本的所有tokens
+        one_input_ids = [tokenizer.bos_token_id] # All tokens of one sample
         prev_tokens_num = 2 + len(final_p_tokens) # 2 for bos_token and eos_token
         for idx, (p, ra, rb) in enumerate(zip(ps, ras, rbs)):
-            r_tokens  = tokenizer(f'\n\n## Round {idx+1}:' if idx else f'## Round {idx+1}:', add_special_tokens=False)["input_ids"] # 对于 Round 1, 前面不需要换行
+            r_tokens  = tokenizer(f'\n\n## Round {idx+1}:' if idx else f'## Round {idx+1}:', add_special_tokens=False)["input_ids"] # For Round 1, no leading newline is needed
             p_tokens  = tokenizer(f'\n### Prompt:\n{p}', add_special_tokens=False)["input_ids"]
             ra_tokens = tokenizer(f'\n\n### Response A:\n{ra}', add_special_tokens=False)["input_ids"]
             rb_tokens = tokenizer(f'\n\n### Response B:\n{rb}', add_special_tokens=False)["input_ids"]
             all_tokens_num = prev_tokens_num + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens)
 
-            # 如果 加上当前轮的tokens 超过了 max_length
+            # If adding the current round's tokens would exceed max_length
             if all_tokens_num > max_length:
-                remain_tokens_num = max_length - prev_tokens_num - len(r_tokens) - 3*len(dot_tokens)  # 剩余可分配的 p,a,b token数量
+                remain_tokens_num = max_length - prev_tokens_num - len(r_tokens) - 3*len(dot_tokens)  # Remaining number of p, a, b tokens that can be allocated
                 if remain_tokens_num >= 80:
-                    # 可分配的 p,a,b token数量 > 80, 可以对 p,a,b token 进行截断
+                    # If the allocatable p, a, b token count is > 80, the p, a, b tokens can be truncated
                     p_tokens  =  p_tokens[:int(remain_tokens_num*0.2)] + dot_tokens if len( p_tokens) > int(remain_tokens_num*0.2) else  p_tokens
                     ra_tokens = ra_tokens[:int(remain_tokens_num*0.4)] + dot_tokens if len(ra_tokens) > int(remain_tokens_num*0.4) else ra_tokens
                     rb_tokens = rb_tokens[:int(remain_tokens_num*0.4)] + dot_tokens if len(rb_tokens) > int(remain_tokens_num*0.4) else rb_tokens
-                    one_input_ids += r_tokens + p_tokens + ra_tokens + rb_tokens # 添加到 input_ids
+                    one_input_ids += r_tokens + p_tokens + ra_tokens + rb_tokens # Add to input_ids
                 break
             else:
                 prev_tokens_num = all_tokens_num
@@ -295,20 +295,20 @@ LOGGER.info(f"Training arguments: {training_args}\n\n")
 class CustomTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
         labels = inputs.get("labels")
-        # 将标签转化为 float 类型以便与概率分布匹配
+        # Convert the labels to float so they match the probability distribution
         labels = labels.to(torch.float32)
 
-        # 获取模型的输出
+        # Get the model output
         outputs = model(**inputs)
         logits = outputs.get("logits")
 
-        # 使用 KLDivLoss 作为损失函数
+        # Use KLDivLoss as the loss function
         loss_fct = nn.KLDivLoss(reduction='batchmean')
 
-        # 将 logits 转换为 log_softmax，适应 KLDivLoss 的输入格式
+        # Convert logits to log_softmax to fit the input format expected by KLDivLoss
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         
-        # 计算损失
+        # Compute the loss
         loss = loss_fct(log_probs, labels)
 
         return (loss, outputs) if return_outputs else loss
@@ -325,21 +325,21 @@ trainer = CustomTrainer(
     data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
 )
 
-# 开始训练
+# Start training
 LOGGER.info("start training...")
 trainer.train()
 
-# 保存模型
+# Save the model
 trainer.save_model(f"{output_dir}/{cur_time_abbr}-pl-adapetermodel")
 LOGGER.info("finish training...")
 
-# 合并, 保存完整模型
+# Merge and save the full model
 merged_model = model.merge_and_unload()
 merged_model.save_pretrained(f"{output_dir}/{cur_time_abbr}-pl-mergedmodel")
 tokenizer.save_pretrained(f"{output_dir}/{cur_time_abbr}-pl-mergedmodel")
 
 
-# 记录 eval_loss
+# Log eval_loss
 eval_losses = [log['eval_loss'] for log in trainer.state.log_history if 'eval_loss' in log]
 if eval_losses:
     last_eval_loss = eval_losses[-1]
