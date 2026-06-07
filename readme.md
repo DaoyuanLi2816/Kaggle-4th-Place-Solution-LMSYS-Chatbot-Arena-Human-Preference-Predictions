@@ -125,6 +125,21 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 - **Inference and Post-Processing**: Implemented a TTA strategy to improve inference results and applied specific post-processing
 
 
+## Repository Structure
+
+```text
+code/
+  1.train.py           # Phase 1: fine-tune gemma-2-9b-it (LoRA) on the 88k dataset
+  2.makepl.py          # Generate pseudo-labels for the ultrafeedback data
+  3.train_pl.py        # Phase 2: retrain from scratch on the combined ~100k dataset
+  inference.ipynb      # Inference with test-time augmentation and post-processing
+  utils.py             # Shared utilities (logging, seeding, config diff)
+  train_v106.yaml      # Phase 1 training configuration
+  train_v106_pl.yaml   # Phase 2 training configuration
+dataset/               # Dataset download instructions
+```
+
+To reproduce: install dependencies with `pip install -r requirements.txt`, run Phase 1 (`1.train.py`), generate pseudo-labels (`2.makepl.py`), run Phase 2 (`3.train_pl.py`), then execute `inference.ipynb` to build the submission.
 ## Author
 
 Daoyuan Li - [Kaggle Profile](https://www.kaggle.com/distiller)
