@@ -30,7 +30,7 @@ def tokenize_cls_p3(example, tokenizer, max_length, is_train):
             ra_tokens = tokenizer(f'\n\n### Response A:\n{ra}', add_special_tokens=False)["input_ids"]
             rb_tokens = tokenizer(f'\n\n### Response B:\n{rb}', add_special_tokens=False)["input_ids"]
 
-            all_tokens_num = prev_tokens_num + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens
+            all_tokens_num = prev_tokens_num + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens)
 
             if all_tokens_num > max_length:
                 remain_tokens_num = max_length - prev_tokens_num - len(r_tokens) - 3 * len(dot_tokens)
