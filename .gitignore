@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.pt
+*.bin
+*.safetensors
+runs/
+wandb/
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
