@@ -21,7 +21,7 @@ from sklearn.metrics import log_loss, accuracy_score
 
 
 def get_now_time_fullstring():
-    # 返回当前时间的完整字符串格式，例如 "2023-06-05 16:35:00"
+    # Return the current time as a full string, e.g. "2023-06-05 16:35:00"
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 def current_date_time():
@@ -29,8 +29,8 @@ def current_date_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def seed_everything(seed=42):
-    # 设置随机种子，以确保实验的可重复性
-    # seed 是一个整数，表示随机种子
+    # Set the random seed to ensure experiment reproducibility
+    # seed is an integer representing the random seed
     
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -41,8 +41,8 @@ def seed_everything(seed=42):
     torch.backends.cudnn.benchmark = True 
 
 def init_logger(log_file):
-    # 初始化日志器
-    # log_file 是一个字符串，表示日志文件的路径
+    # Initialize the logger
+    # log_file is a string representing the path to the log file
     
     from logging import getLogger, INFO, FileHandler,  Formatter,  StreamHandler
     logger = getLogger(__name__)
@@ -56,8 +56,8 @@ def init_logger(log_file):
     return logger
 
 def get_timediff(time1,time2):
-    # 计算两个时间点之间的时间差，并以分钟和秒的形式返回
-    # time1 和 time2 是两个时间点，以秒为单位
+    # Compute the time difference between two time points and return it in minutes and seconds
+    # time1 and time2 are two time points measured in seconds
     
     minute_,second_ = divmod(time2-time1,60)
     return f"{int(minute_):02d}:{int(second_):02d}"
@@ -115,7 +115,7 @@ def compare_yaml(file1, file2):
     '''
     Compare two yaml files and return the differences
     '''
-    # 如果没有指定file1, 那么就和file2上一个yaml文件进行比较
+    # If file1 is not specified, compare against the yaml file preceding file2
     if not file1:
         all_yaml_files = sorted(glob("*.yaml"))
         if all_yaml_files.index(file2) == 0:
@@ -163,11 +163,11 @@ def compare_yaml(file1, file2):
 
 def format_diffs(diffs):
     '''
-    格式化diffs
+    Format the diffs
     '''
     formatted_diffs = ""
     
-    # 处理值变化
+    # Handle value changes
     for diff_type, changes in diffs.items():
         if diff_type == 'values_changed':
             for key, value in changes.items():
@@ -176,7 +176,7 @@ def format_diffs(diffs):
                 path_str = " - ".join(path)
                 formatted_diffs += f"{path_str}: {value['old_value']} --> {value['new_value']}\n"
         
-        # 处理添加的项目
+        # Handle added items
         elif diff_type == 'dictionary_item_added_values':
             for key, value in changes.items():
                 path = key.split('[')[1:]
@@ -184,7 +184,7 @@ def format_diffs(diffs):
                 path_str = " - ".join(path)
                 formatted_diffs += f"[add] {path_str}: {value}\n"
         
-        # 处理删除的项目
+        # Handle removed items
         elif diff_type == 'dictionary_item_removed_values':
             for key, value in changes.items():
                 path = key.split('[')[1:]
