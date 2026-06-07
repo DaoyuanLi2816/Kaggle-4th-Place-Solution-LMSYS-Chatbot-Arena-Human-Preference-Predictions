@@ -5,7 +5,7 @@ This solution was developed for the [LMSYS - Chatbot Arena Human Preference Pred
 
 Our team successfully placed **4th out of 1849 teams**, earning a [Gold Medal](https://www.kaggle.com/certification/competitions/distiller/lmsys-chatbot-arena) for our solution and a prize of $20,000! 🏅
 
-![Daoyuan Li - LMSYS](./Daoyuan%20Li%20-%20LMSYS%20-%20Chatbot%20Arena%20Human%20Preference%20Predictions.png)
+![Daoyuan Li - LMSYS](./lmsys-chatbot-arena-certificate.png)
 
 ## Data
 First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the ultrafeedback dataset to further supplement the dataset.
