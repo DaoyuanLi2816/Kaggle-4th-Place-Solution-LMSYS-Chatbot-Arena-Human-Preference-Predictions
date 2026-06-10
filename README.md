@@ -2,7 +2,7 @@
 
 **Train and serve pairwise LLM judges (A wins / B wins / tie) — with budget-aware multi-turn packing, position-bias correction, and pseudo-label distillation.**
 
-[![CI](https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions/actions/workflows/ci.yml/badge.svg)](https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions/actions)
+[![CI](https://github.com/DaoyuanLi2816/pairjudge/actions/workflows/ci.yml/badge.svg)](https://github.com/DaoyuanLi2816/pairjudge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 [![Kaggle Gold](https://img.shields.io/badge/Kaggle-Gold%20%C2%B7%204th%20of%201849-FFD700)](https://www.kaggle.com/competitions/lmsys-chatbot-arena/leaderboard)
@@ -128,7 +128,7 @@ If you need a scalar reward for PPO-style RLHF, use TRL. If you need a *judge* t
   author = {Daoyuan Li},
   title  = {pairjudge: pairwise LLM judges with budget-aware packing and position-bias correction},
   year   = {2024},
-  url    = {https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions},
+  url    = {https://github.com/DaoyuanLi2816/pairjudge},
   note   = {Generalized from the 4th-place solution, Kaggle LMSYS Chatbot Arena Human Preference Predictions}
 }
 ```
