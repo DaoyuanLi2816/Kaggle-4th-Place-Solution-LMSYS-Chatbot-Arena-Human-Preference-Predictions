@@ -45,8 +45,8 @@ train = [
 test = ["pytest", "torch", "transformers>=4.46", "scikit-learn"]
 
 [project.urls]
-Homepage = "https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions"
-Issues = "https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions/issues"
+Homepage = "https://github.com/DaoyuanLi2816/pairjudge"
+Issues = "https://github.com/DaoyuanLi2816/pairjudge/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
