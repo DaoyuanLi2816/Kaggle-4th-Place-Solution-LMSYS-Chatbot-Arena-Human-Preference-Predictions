@@ -2,16 +2,15 @@
   <img src="https://raw.githubusercontent.com/DaoyuanLi2816/pairjudge/main/docs/banner.svg" alt="pairjudge — train and serve pairwise LLM judges (A wins / B wins / tie): budget-aware multi-turn packing, position-bias correction, pseudo-label distillation. Kaggle Gold, 4th of 1,849 teams." width="880">
 </p>
 
-# pairjudge
-
-**Train and serve pairwise LLM judges (A wins / B wins / tie) — with budget-aware multi-turn packing, position-bias correction, and pseudo-label distillation.**
+<div align="center">
 
 [![CI](https://github.com/DaoyuanLi2816/pairjudge/actions/workflows/ci.yml/badge.svg)](https://github.com/DaoyuanLi2816/pairjudge/actions)
 [![PyPI](https://img.shields.io/pypi/v/pairjudge)](https://pypi.org/project/pairjudge/)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Kaggle Gold](https://img.shields.io/badge/Kaggle-Gold%20%C2%B7%204th%20of%201849-FFD700)](https://www.kaggle.com/competitions/lmsys-chatbot-arena/leaderboard)
-[![GitHub stars](https://img.shields.io/github/stars/DaoyuanLi2816/pairjudge?style=social)](https://github.com/DaoyuanLi2816/pairjudge/stargazers)
+
+</div>
 
 `pairjudge` is the generalized core of the **4th-place (gold medal) solution** to Kaggle's [LMSYS — Chatbot Arena Human Preference Predictions](https://www.kaggle.com/competitions/lmsys-chatbot-arena/overview) (1,849 teams), extracted into a small, tested library you can run on **your own preference data with any Hugging Face backbone**. The exact competition artifacts are preserved untouched in [`competition/`](competition/README.md), and a golden test pins the library's default behavior to the medal-winning code **byte for byte**.
 
