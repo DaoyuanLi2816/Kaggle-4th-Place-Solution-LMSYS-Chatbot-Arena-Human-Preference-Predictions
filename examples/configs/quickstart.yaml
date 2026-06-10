@@ -1,0 +1,24 @@
+# Train a small pairwise judge end to end on a single consumer GPU.
+# Qwen2.5-0.5B-Instruct is ungated and fits comfortably in <8 GB with LoRA.
+#
+#   python -m pairjudge.training --cfg examples/configs/quickstart.yaml
+#
+# train_path accepts an Arena-format CSV (the Kaggle competition format) or
+# a parquet in the canonical schema (see pairjudge/data.py).
+
+train_path: ./input/lmsys-chatbot-arena/train.csv
+label_mode: hard
+
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+max_length: 1024
+
+use_lora: true
+lora_r: 16
+lora_alpha: 16
+
+output_dir: ./output/judge-quickstart
+n_epochs: 1.0
+lr: 0.0002
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+bf16: true

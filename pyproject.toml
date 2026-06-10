@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pairjudge"
+version = "0.1.0"
+description = "Train and serve pairwise LLM judges (A/B/tie) with budget-aware multi-turn packing and position-bias correction"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Daoyuan Li", email = "lidaoyuan2816@gmail.com" }]
+keywords = [
+    "llm-as-judge",
+    "reward-model",
+    "preference-learning",
+    "rlhf",
+    "chatbot-arena",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# Inference: load a trained judge and predict preferences.
+judge = ["torch", "transformers>=4.46"]
+# Training: fine-tune a judge with LoRA on your own preference data.
+train = [
+    "torch",
+    "transformers>=4.46",
+    "peft",
+    "datasets",
+    "accelerate",
+    "scikit-learn",
+]
+test = ["pytest", "torch", "transformers>=4.46", "scikit-learn"]
+
+[project.urls]
+Homepage = "https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions"
+Issues = "https://github.com/DaoyuanLi2816/Kaggle-4th-Place-Solution-LMSYS-Chatbot-Arena-Human-Preference-Predictions/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
