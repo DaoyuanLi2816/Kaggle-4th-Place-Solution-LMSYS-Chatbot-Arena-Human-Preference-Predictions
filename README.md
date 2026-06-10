@@ -18,6 +18,27 @@ Three problems show up the moment you train a pairwise judge on real conversatio
 **1. Truncation silently destroys the comparison.**
 A judge input holds a multi-turn conversation *plus two responses per turn*. With naive left- or right-truncation, long inputs routinely lose response B (or the prompt) entirely — the judge then learns position artifacts instead of preferences. `PairPacker` packs rounds greedily and, when the budget runs out, truncates the final round *proportionally* (default 20% prompt / 40% response A / 40% response B), marks every cut with an explicit ellipsis, and drops rounds that can't be shown honestly. Guarantee: never exceeds `max_length`, and every retained round shows all three fields.
 
+<table>
+  <tr>
+    <th align="left" colspan="8">One packed example — fixed <code>max_length</code> token budget</th>
+  </tr>
+  <tr>
+    <td align="center" rowspan="2">&nbsp;<code>BOS</code>&nbsp;</td>
+    <td align="center" colspan="3"><b>Round 1</b> — fits in full</td>
+    <td align="center" colspan="3"><b>Round 2</b> — over budget → proportional truncation</td>
+    <td align="center" rowspan="2">verdict<br>prompt<br>+ <code>EOS</code></td>
+  </tr>
+  <tr>
+    <td align="center">prompt</td>
+    <td align="center">response&nbsp;A</td>
+    <td align="center">response&nbsp;B</td>
+    <td align="center">prompt&nbsp;<code>……</code><br><sub>20% of remainder</sub></td>
+    <td align="center">response&nbsp;A&nbsp;<code>……</code><br><sub>40% of remainder</sub></td>
+    <td align="center">response&nbsp;B&nbsp;<code>……</code><br><sub>40% of remainder</sub></td>
+  </tr>
+</table>
+<sub>A round that would get fewer than <code>min_tail_budget</code> (default 80) content tokens is dropped entirely, along with every later round; <code>……</code> marks each cut. Response B can never be silently pushed out of the sequence.</sub>
+
 **2. Pairwise judges have position bias.**
 Swap A and B and a naive judge changes its verdict on a measurable fraction of pairs. `PairwiseJudge.predict_proba(swap_debias=True)` scores each pair in both orders and averages in the original frame — order-invariant by construction. `position_flip_rate()` measures how biased your judge is before you decide to pay the 2x compute.
 
@@ -74,6 +95,16 @@ python -m pairjudge.training --cfg examples/configs/reproduce_competition.yaml
 Input is either an Arena-format CSV (the Kaggle competition schema) or a parquet with canonical columns — `prompt` / `response_a` / `response_b` as per-round string lists plus one-hot (or soft) `winner_*` columns. `pairjudge.data` ships loaders for Arena CSVs and UltraFeedback-style chosen/rejected data, plus `from_pairs()` for plain Python lists.
 
 The full two-phase distillation loop:
+
+```mermaid
+flowchart LR
+    H["human-labeled pairs<br>Arena 55k + 33k"] -- "phase 1 · CE loss" --> J1["judge v1<br>(LoRA fine-tune)"]
+    U["unlabeled pool<br>UltraFeedback 30k"] --> P["pseudo-label with judge v1<br>keep full distributions"]
+    J1 --> P
+    H -- "phase 2" --> J2["judge v2 — final"]
+    P -- "soft labels · KL loss" --> J2
+    J2 -- "swap-debias TTA" --> O["order-invariant<br>predictions"]
+```
 
 ```bash
 # Phase 1: train on human labels
@@ -140,6 +171,12 @@ Numbers above are from a small judge trained in 25 minutes — treat them as a b
 - The competition scripts, configs, inference notebook and certificate are preserved verbatim in [`competition/`](competition/README.md), including the full original write-up.
 - `tests/test_packing.py::TestCompetitionEquivalence` fuzzes 1,500 conversations against a verbatim copy of the competition tokenizer ([`tests/reference_impl.py`](tests/reference_impl.py)) and asserts byte-identical output with default settings — the library *is* the medal-winning code, not a reimplementation of it.
 - Final leaderboard: **4th / 1,849** ([gold medal](https://www.kaggle.com/certification/competitions/distiller/lmsys-chatbot-arena), $20,000 prize).
+
+<p align="center">
+  <a href="https://www.kaggle.com/certification/competitions/distiller/lmsys-chatbot-arena">
+    <img src="competition/lmsys-chatbot-arena-certificate.png" alt="Kaggle LMSYS Chatbot Arena gold medal certificate — Daoyuan Li, 4th place of 1,849 teams" width="560">
+  </a>
+</p>
 
 ## Citation
 
