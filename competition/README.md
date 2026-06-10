@@ -1,6 +1,8 @@
 
 # LMSYS - Chatbot Arena Human Preference Prediction Solution
 
+> **Note**: this directory preserves the *exact* code that produced the 4th-place submission, unchanged, for provenance and reproducibility. The generalized, tested, reusable form of these techniques is the [`pairjudge`](../README.md) library at the repository root — if you want to apply them to your own data, start there.
+
 This solution was developed for the [LMSYS - Chatbot Arena Human Preference Predictions](https://www.kaggle.com/competitions/lmsys-chatbot-arena/overview) competition on Kaggle, where participants were challenged to predict user preferences in head-to-head conversations between chatbots powered by large language models (LLMs). The task involved utilizing a dataset from **Chatbot Arena**, in which users interact with two anonymous LLMs and choose their preferred response. By creating a machine learning model that accurately predicts these preferences, we aimed to contribute to improving the alignment of chatbot responses with human preferences.
 
 Our team successfully placed **4th out of 1849 teams**, earning a [Gold Medal](https://www.kaggle.com/certification/competitions/distiller/lmsys-chatbot-arena) for our solution and a prize of $20,000! 🏅
@@ -125,21 +127,20 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 - **Inference and Post-Processing**: Implemented a TTA strategy to improve inference results and applied specific post-processing
 
 
-## Repository Structure
+## Directory Contents
 
 ```text
-code/
-  1.train.py           # Phase 1: fine-tune gemma-2-9b-it (LoRA) on the 88k dataset
-  2.makepl.py          # Generate pseudo-labels for the ultrafeedback data
-  3.train_pl.py        # Phase 2: retrain from scratch on the combined ~100k dataset
-  inference.ipynb      # Inference with test-time augmentation and post-processing
-  utils.py             # Shared utilities (logging, seeding, config diff)
-  train_v106.yaml      # Phase 1 training configuration
-  train_v106_pl.yaml   # Phase 2 training configuration
-dataset/               # Dataset download instructions
+1.train.py             # Phase 1: fine-tune gemma-2-9b-it (LoRA) on the 88k dataset
+2.makepl.py            # Generate pseudo-labels for the ultrafeedback data
+3.train_pl.py          # Phase 2: retrain from scratch on the combined ~100k dataset
+inference.ipynb        # Inference with test-time augmentation and post-processing
+utils.py               # Shared utilities (logging, seeding, config diff)
+train_v106.yaml        # Phase 1 training configuration
+train_v106_pl.yaml     # Phase 2 training configuration
+dataset_download.txt   # Dataset download instructions
 ```
 
-To reproduce: install dependencies with `pip install -r requirements.txt`, run Phase 1 (`1.train.py`), generate pseudo-labels (`2.makepl.py`), run Phase 2 (`3.train_pl.py`), then execute `inference.ipynb` to build the submission.
+To reproduce: install dependencies with `pip install -r requirements.txt`, run Phase 1 (`1.train.py`), generate pseudo-labels (`2.makepl.py`), run Phase 2 (`3.train_pl.py`), then execute `inference.ipynb` to build the submission. The `pairjudge` library at the repository root reproduces the same tokenization byte for byte (enforced by a golden test) with a config-driven CLI — see `examples/configs/reproduce_competition.yaml`.
 ## Author
 
 Daoyuan Li - [Kaggle Profile](https://www.kaggle.com/distiller)
