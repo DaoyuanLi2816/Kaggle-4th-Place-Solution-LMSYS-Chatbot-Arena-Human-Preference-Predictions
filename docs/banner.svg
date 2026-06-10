@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 250" role="img" aria-label="pairjudge — train and serve pairwise LLM judges">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="55%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <clipPath id="bgclip">
+      <rect x="0" y="0" width="880" height="250" rx="16"/>
+    </clipPath>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="880" height="250" rx="16" fill="url(#bg)"/>
+  <g clip-path="url(#bgclip)">
+    <circle cx="790" cy="0" r="190" fill="#818cf8" opacity="0.08"/>
+    <circle cx="350" cy="265" r="150" fill="#38bdf8" opacity="0.05"/>
+  </g>
+
+  <!-- ===== left column: brand ===== -->
+  <text x="40" y="84" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" fill="#ffffff">pairjudge</text>
+  <rect x="42" y="94" width="64" height="3" rx="1.5" fill="#fbbf24" opacity="0.9"/>
+  <text x="40" y="124" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#cbd5e1">Train &amp; serve pairwise LLM judges</text>
+
+  <!-- verdict chips -->
+  <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">
+    <rect x="40" y="140" width="66" height="24" rx="12" fill="#34d399" fill-opacity="0.12" stroke="#34d399" stroke-opacity="0.65"/>
+    <text x="73" y="156" fill="#6ee7b7">A wins</text>
+    <rect x="114" y="140" width="66" height="24" rx="12" fill="#60a5fa" fill-opacity="0.12" stroke="#60a5fa" stroke-opacity="0.65"/>
+    <text x="147" y="156" fill="#93c5fd">B wins</text>
+    <rect x="188" y="140" width="50" height="24" rx="12" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.65"/>
+    <text x="213" y="156" fill="#fde68a">tie</text>
+  </g>
+
+  <!-- gold medal pill -->
+  <rect x="40" y="178" width="232" height="28" rx="14" fill="#fbbf24" fill-opacity="0.10" stroke="#fbbf24" stroke-opacity="0.55"/>
+  <circle cx="58" cy="192" r="8.5" fill="none" stroke="#fde68a" stroke-width="1.5"/>
+  <text x="58" y="195.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" text-anchor="middle" fill="#fde68a">&#9733;</text>
+  <text x="73" y="196" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#fde68a">Kaggle Gold &#183; 4th of 1,849 teams</text>
+
+  <!-- pip install pill -->
+  <rect x="40" y="214" width="190" height="26" rx="13" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.18"/>
+  <text x="54" y="231" font-family="ui-monospace, SFMono-Regular, Consolas, 'Courier New', monospace" font-size="12.5" fill="#e2e8f0">$ pip install pairjudge</text>
+
+  <!-- ===== card 1: budget-aware packing ===== -->
+  <g>
+    <rect x="350" y="30" width="156" height="190" rx="12" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.13"/>
+    <circle cx="380" cy="62" r="16" fill="#38bdf8" fill-opacity="0.14" stroke="#38bdf8" stroke-opacity="0.55" stroke-width="1.4"/>
+    <g stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round">
+      <line x1="372" y1="56" x2="388" y2="56"/>
+      <line x1="372" y1="62" x2="383" y2="62"/>
+      <line x1="372" y1="68" x2="378" y2="68"/>
+    </g>
+    <circle cx="383" cy="68" r="0.9" fill="#38bdf8"/>
+    <circle cx="387" cy="68" r="0.9" fill="#38bdf8"/>
+    <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+      <text x="366" y="102" font-size="14" font-weight="700" fill="#f1f5f9">Budget-aware</text>
+      <text x="366" y="120" font-size="14" font-weight="700" fill="#f1f5f9">packing</text>
+      <text x="366" y="142" font-size="11.5" fill="#94a3b8">prompt, A and B always</text>
+      <text x="366" y="158" font-size="11.5" fill="#94a3b8">survive truncation</text>
+      <text x="366" y="180" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">byte-equal to the</text>
+      <text x="366" y="195" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">gold-medal code</text>
+    </g>
+  </g>
+
+  <!-- ===== card 2: position-bias correction ===== -->
+  <g>
+    <rect x="520" y="30" width="156" height="190" rx="12" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.13"/>
+    <circle cx="550" cy="62" r="16" fill="#34d399" fill-opacity="0.14" stroke="#34d399" stroke-opacity="0.55" stroke-width="1.4"/>
+    <g stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <line x1="542" y1="58" x2="556" y2="58"/>
+      <path d="M 553 54.8 L 558 58 L 553 61.2"/>
+      <line x1="558" y1="66" x2="544" y2="66"/>
+      <path d="M 547 62.8 L 542 66 L 547 69.2"/>
+    </g>
+    <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+      <text x="536" y="102" font-size="14" font-weight="700" fill="#f1f5f9">Position-bias</text>
+      <text x="536" y="120" font-size="14" font-weight="700" fill="#f1f5f9">correction</text>
+      <text x="536" y="142" font-size="11.5" fill="#94a3b8">score both orders,</text>
+      <text x="536" y="158" font-size="11.5" fill="#94a3b8">average the verdicts</text>
+      <text x="536" y="180" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">29.2% verdict flips</text>
+      <text x="536" y="195" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">measured on Arena data</text>
+    </g>
+  </g>
+
+  <!-- ===== card 3: pseudo-label distillation ===== -->
+  <g>
+    <rect x="690" y="30" width="156" height="190" rx="12" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.13"/>
+    <circle cx="720" cy="62" r="16" fill="#a78bfa" fill-opacity="0.14" stroke="#a78bfa" stroke-opacity="0.55" stroke-width="1.4"/>
+    <g stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M 712 54 L 728 54 L 720 63 L 720 69"/>
+    </g>
+    <circle cx="720" cy="74.5" r="1.8" fill="#a78bfa"/>
+    <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+      <text x="706" y="102" font-size="14" font-weight="700" fill="#f1f5f9">Pseudo-label</text>
+      <text x="706" y="120" font-size="14" font-weight="700" fill="#f1f5f9">distillation</text>
+      <text x="706" y="142" font-size="11.5" fill="#94a3b8">judge labels the pool,</text>
+      <text x="706" y="158" font-size="11.5" fill="#94a3b8">retrain with KL loss</text>
+      <text x="706" y="180" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">the recipe behind</text>
+      <text x="706" y="195" font-size="10.5" fill="#fcd34d" fill-opacity="0.9">4th of 1,849</text>
+    </g>
+  </g>
+</svg>
