@@ -115,6 +115,26 @@ proba[identical] = [0.06, 0.06, 0.88]  # identical responses are a tie
 
 If you need a scalar reward for PPO-style RLHF, use TRL. If you need a *judge* that compares two concrete responses — for evaluation, reranking, data labeling, or arena prediction — and your data has ties, this is the recipe that placed 4th of 1,849 on exactly that task.
 
+## Measured: position bias on real preference data
+
+How big is position bias in practice? [`examples/position_bias_experiment.py`](examples/position_bias_experiment.py) trains a judge end to end through the library's public API and measures it on real data — Qwen2.5-0.5B-Instruct, LoRA, 16k training pairs from the public [Arena 55k](https://huggingface.co/datasets/lmarena-ai/arena-human-preference-55k) dataset, 2,000 held-out pairs, one RTX 4080 (16 GB), ~25 minutes:
+
+> The judge **changes its verdict on 29.2% of pairs** when the same two responses are presented in the opposite order.
+
+| metric (2,000 held-out pairs) | single pass (A, B) | swap-debiased |
+|---|---|---|
+| log-loss | 1.0496 | **1.0462** |
+| accuracy | 45.6% | 45.1% |
+
+Swap debiasing improves the proper scoring metric (log-loss) and, by construction, makes the verdict independent of presentation order; top-1 accuracy stays flat within noise at this model scale. The same averaging was part of the gold-medal submission at 9B scale. Reproduce with:
+
+```bash
+pip install -e .[train] datasets
+python examples/position_bias_experiment.py
+```
+
+Numbers above are from a small judge trained in 25 minutes — treat them as a bias *measurement*, not a quality ceiling; the competition configuration (gemma-2-9b-it, ~100k pairs, max_length 3072) is in `examples/configs/reproduce_competition.yaml`.
+
 ## Provenance & validation
 
 - The competition scripts, configs, inference notebook and certificate are preserved verbatim in [`competition/`](competition/README.md), including the full original write-up.
