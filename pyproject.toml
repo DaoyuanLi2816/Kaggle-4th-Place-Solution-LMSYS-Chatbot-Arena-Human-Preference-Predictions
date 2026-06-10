@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pairjudge"
-version = "0.1.0"
+version = "0.1.1"
 description = "Train and serve pairwise LLM judges (A/B/tie) with budget-aware multi-turn packing and position-bias correction"
 readme = "README.md"
 requires-python = ">=3.9"
