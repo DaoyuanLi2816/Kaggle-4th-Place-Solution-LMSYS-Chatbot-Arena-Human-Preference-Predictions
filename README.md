@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DaoyuanLi2816/pairjudge/main/docs/banner.svg" alt="pairjudge — train and serve pairwise LLM judges (A wins / B wins / tie): budget-aware multi-turn packing, position-bias correction, pseudo-label distillation. Kaggle Gold, 4th of 1,849 teams." width="880">
+</p>
+
 # pairjudge
 
 **Train and serve pairwise LLM judges (A wins / B wins / tie) — with budget-aware multi-turn packing, position-bias correction, and pseudo-label distillation.**
@@ -174,7 +178,7 @@ Numbers above are from a small judge trained in 25 minutes — treat them as a b
 
 <p align="center">
   <a href="https://www.kaggle.com/certification/competitions/distiller/lmsys-chatbot-arena">
-    <img src="competition/lmsys-chatbot-arena-certificate.png" alt="Kaggle LMSYS Chatbot Arena gold medal certificate — Daoyuan Li, 4th place of 1,849 teams" width="560">
+    <img src="https://raw.githubusercontent.com/DaoyuanLi2816/pairjudge/main/competition/lmsys-chatbot-arena-certificate.png" alt="Kaggle LMSYS Chatbot Arena gold medal certificate — Daoyuan Li, 4th place of 1,849 teams" width="560">
   </a>
 </p>
 
