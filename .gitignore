@@ -11,3 +11,12 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# experiment artifacts
+input/
+output/
+*.log
