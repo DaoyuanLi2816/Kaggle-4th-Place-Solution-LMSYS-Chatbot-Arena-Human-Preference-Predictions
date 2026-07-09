@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pairjudge"
-version = "0.1.1"
+version = "0.1.2"
 description = "Train and serve pairwise LLM judges (A/B/tie) with budget-aware multi-turn packing and position-bias correction"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -38,7 +38,8 @@ dependencies = [
 
 [project.optional-dependencies]
 # Inference: load a trained judge and predict preferences.
-judge = ["torch", "transformers>=4.46"]
+# accelerate is required by the default device_map="auto" load path.
+judge = ["torch", "transformers>=4.46", "accelerate"]
 # Training: fine-tune a judge with LoRA on your own preference data.
 train = [
     "torch",

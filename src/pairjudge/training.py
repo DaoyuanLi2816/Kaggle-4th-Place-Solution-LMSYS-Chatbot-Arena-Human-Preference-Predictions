@@ -127,10 +127,12 @@ def build_model_and_tokenizer(cfg: JudgeTrainConfig):
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    from ._compat import model_dtype_kwargs
+
     model = AutoModelForSequenceClassification.from_pretrained(
         cfg.model_name,
         num_labels=3,
-        torch_dtype=torch.bfloat16 if cfg.bf16 else torch.float16,
+        **model_dtype_kwargs(torch.bfloat16 if cfg.bf16 else torch.float16),
     )
     model.config.use_cache = False
     model.config.pad_token_id = tokenizer.pad_token_id
@@ -198,7 +200,6 @@ def train(cfg: JudgeTrainConfig) -> Dict[str, Any]:
 
     training_args = TrainingArguments(
         output_dir=cfg.output_dir,
-        overwrite_output_dir=True,
         report_to="none",
         num_train_epochs=cfg.n_epochs,
         per_device_train_batch_size=cfg.per_device_train_batch_size,

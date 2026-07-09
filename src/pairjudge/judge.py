@@ -77,7 +77,14 @@ class PairwiseJudge:
             AutoTokenizer,
         )
 
+        from ._compat import model_dtype_kwargs
+
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        # Backbones without a pad token (e.g. stock Llama-3) otherwise raise
+        # "Asking to pad but the tokenizer does not have a padding token" the
+        # first time predict_proba batches unequal-length inputs.
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
         if load_in_8bit:
             from transformers import BitsAndBytesConfig
 
@@ -85,8 +92,8 @@ class PairwiseJudge:
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path,
             num_labels=3,
-            torch_dtype=torch_dtype or torch.float16,
             device_map=device_map,
+            **model_dtype_kwargs(torch_dtype or torch.float16),
             **model_kwargs,
         )
         model.config.pad_token_id = tokenizer.pad_token_id
