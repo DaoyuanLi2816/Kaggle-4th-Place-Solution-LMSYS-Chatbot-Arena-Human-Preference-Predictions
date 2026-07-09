@@ -169,7 +169,7 @@ pip install -e .[train] datasets
 python examples/position_bias_experiment.py
 ```
 
-Numbers above are from a small judge trained in 25 minutes — treat them as a bias *measurement*, not a quality ceiling; the competition configuration (gemma-2-9b-it, ~100k pairs, max_length 3072) is in `examples/configs/reproduce_competition.yaml`.
+Numbers above are from a small judge trained in 25 minutes — treat them as a bias *measurement*, not a quality ceiling; a library-native config close to the competition phase-1 recipe (gemma-2-9b-it, ~88k pairs, max_length 2048) is in `examples/configs/reproduce_competition.yaml`. (The gold run's pseudo-label pass used max_length 3072 over ~100k pairs; see `competition/`.)
 
 ## Provenance & validation
 
