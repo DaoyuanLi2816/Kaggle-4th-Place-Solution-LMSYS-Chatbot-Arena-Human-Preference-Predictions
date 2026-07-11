@@ -165,7 +165,7 @@ How big is position bias in practice? [`examples/position_bias_experiment.py`](e
 Swap debiasing improves the proper scoring metric (log-loss) and, by construction, makes the verdict independent of presentation order; top-1 accuracy stays flat within noise at this model scale. The same averaging was part of the gold-medal submission at 9B scale. Reproduce with:
 
 ```bash
-pip install -e .[train] datasets
+pip install -e .[train]
 python examples/position_bias_experiment.py
 ```
 
