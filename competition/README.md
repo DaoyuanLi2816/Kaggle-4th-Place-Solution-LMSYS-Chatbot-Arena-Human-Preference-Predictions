@@ -10,7 +10,7 @@ Our team successfully placed **4th out of 1849 teams**, earning a [Gold Medal](h
 ![Daoyuan Li - LMSYS](./lmsys-chatbot-arena-certificate.png)
 
 ## Data
-First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the ultrafeedback dataset to further supplement the dataset.
+First, we utilized the official dataset (55k) along with 33k deduplicated data, employing a 20-fold cross-validation (n_splits=20), but only trained on one fold to maximize the amount of training data. Additionally, we created pseudo-labels for 30,000 entries from the UltraFeedback dataset to further supplement the dataset.
 
 ## Prompt
 We designed a unique prompt, which is beneficial because when the dialogue length exceeds the maximum token length (`max_length`), it allows for a reasonable truncation of the final round of conversation. This ensures that the prompt, response A, and response B can all be adequately displayed, avoiding situations where only the prompt or response A gets truncated. If the remaining token count in the final round is less than 80, the entire conversation round (and the subsequent ones) will be discarded. These thresholds and proportions were determined through observation of the training set.
@@ -88,7 +88,7 @@ We selected **gemma-2-9b-it** as the starting model, which significantly outperf
 
 ## Process
 1. **Phase 1**: We used the official dataset (55k) along with 33k deduplicated data, employing 20-fold cross-validation, but only trained one fold.
-2. **Phase 2**: Using the model from the first phase, we generated pseudo-labels for 30,000 entries from the ultrafeedback dataset. These were then merged with the Phase 1 dataset, totaling over 100,000 entries. A new model was trained from scratch.
+2. **Phase 2**: Using the model from the first phase, we generated pseudo-labels for 30,000 entries from the UltraFeedback dataset. These were then merged with the Phase 1 dataset, totaling over 100,000 entries. A new model was trained from scratch.
 
 Each experiment took approximately 10 hours for the first phase and 15 hours for the second phase on a system with 4 A100 GPUs (40G).
 
@@ -122,7 +122,7 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 **Overview**: Developed and optimized a human preference prediction model for dialogue systems based on the gemma-2-9b-it model, improving the accuracy of predicting user preference responses in the dialogue system.
 
 **Key Techniques**:
-- **Data Processing**: Utilized 88k official and deduplicated data, performed 20-fold cross-validation (trained on one fold only), and created pseudo-labels for ultrafeedback data, expanding the dataset to over 100,000 entries.
+- **Data Processing**: Utilized 88k official and deduplicated data, performed 20-fold cross-validation (trained on one fold only), and created pseudo-labels for UltraFeedback data, expanding the dataset to over 100,000 entries.
 - **Model Optimization**: Fine-tuned the **Gemma2ForSequenceClassification** model using LoRA and performed a three-class classification task. Unique prompt design improved handling of long conversation truncations.
 - **Inference and Post-Processing**: Implemented a TTA strategy to improve inference results and applied specific post-processing
 
@@ -131,7 +131,7 @@ submission_df.loc[submission_df['id'].isin(same_a_b_id_list), ['winner_model_a',
 
 ```text
 1.train.py             # Phase 1: fine-tune gemma-2-9b-it (LoRA) on the 88k dataset
-2.makepl.py            # Generate pseudo-labels for the ultrafeedback data
+2.makepl.py            # Generate pseudo-labels for the UltraFeedback data
 3.train_pl.py          # Phase 2: retrain from scratch on the combined ~100k dataset
 inference.ipynb        # Inference with test-time augmentation and post-processing
 utils.py               # Shared utilities (logging, seeding, config diff)
