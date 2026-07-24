@@ -23,7 +23,7 @@ import pandas as pd
 #: String encodings of an empty response as they appear in Chatbot Arena
 #: exports. A response equal to any of these is "empty" for labeling and
 #: guardrail purposes.
-EMPTY_RESPONSE_PATTERNS = ('[null]', '[]', '[ ]', '[  ]', '[""]', '["",""]')
+EMPTY_RESPONSE_PATTERNS = ("[null]", "[]", "[ ]", "[  ]", '[""]', '["",""]')
 
 _LIST_COLUMNS = ("prompt", "response_a", "response_b")
 _WINNER_COLUMNS = ("winner_model_a", "winner_model_b", "winner_tie")
@@ -31,6 +31,28 @@ _WINNER_COLUMNS = ("winner_model_a", "winner_model_b", "winner_tie")
 
 def _is_empty(series: pd.Series) -> pd.Series:
     return series.isin(EMPTY_RESPONSE_PATTERNS)
+
+
+def _last_assistant_reply(messages, column: str, row_index) -> str:
+    if isinstance(messages, (str, bytes, dict)):
+        raise ValueError(
+            f"{column} at row {row_index!r} must be a list of chat messages"
+        )
+    try:
+        reversed_messages = reversed(messages)
+    except TypeError as exc:
+        raise ValueError(
+            f"{column} at row {row_index!r} must be a list of chat messages"
+        ) from exc
+    for message in reversed_messages:
+        if isinstance(message, dict) and message.get("role") == "assistant":
+            content = message.get("content")
+            if not isinstance(content, str):
+                raise ValueError(
+                    f"{column} assistant content at row {row_index!r} must be a string"
+                )
+            return content
+    raise ValueError(f"{column} at row {row_index!r} has no assistant message")
 
 
 def load_arena_csv(
@@ -53,7 +75,11 @@ def load_arena_csv(
       side wins when ``relabel_empty`` — annotators almost always prefer *any*
       answer over a blank one, and the few contrary labels are noise.
     """
-    df = path_or_df if isinstance(path_or_df, pd.DataFrame) else pd.read_csv(path_or_df, encoding="utf-8")
+    df = (
+        path_or_df
+        if isinstance(path_or_df, pd.DataFrame)
+        else pd.read_csv(path_or_df, encoding="utf-8")
+    )
     df = df.copy()
 
     a_empty, b_empty = _is_empty(df["response_a"]), _is_empty(df["response_b"])
@@ -82,17 +108,25 @@ def load_ultrafeedback(
     """Convert an UltraFeedback-style chosen/rejected dataset to the canonical schema.
 
     Each record has ``prompt`` (str) and ``chosen``/``rejected`` conversations
-    (list of ``{"role", "content"}`` messages, assistant reply at index 1).
+    (lists of ``{"role", "content"}`` messages). The final assistant reply is
+    used, which handles the standard two-message format as well as conversations
+    with a system prompt or multiple turns.
     The chosen/rejected pair is assigned to A/B *uniformly at random* (seeded)
     so the resulting dataset is free of position bias by construction.
     """
-    df = path_or_df if isinstance(path_or_df, pd.DataFrame) else pd.read_parquet(path_or_df)
+    df = (
+        path_or_df
+        if isinstance(path_or_df, pd.DataFrame)
+        else pd.read_parquet(path_or_df)
+    )
     rng = random.Random(seed)
 
     records = []
-    for _, row in df.iterrows():
-        chosen = [row["chosen"][1]["content"]]
-        rejected = [row["rejected"][1]["content"]]
+    for row_index, row in df.iterrows():
+        if not isinstance(row["prompt"], str):
+            raise ValueError(f"prompt at row {row_index!r} must be a string")
+        chosen = [_last_assistant_reply(row["chosen"], "chosen", row_index)]
+        rejected = [_last_assistant_reply(row["rejected"], "rejected", row_index)]
         if rng.random() > 0.5:
             response_a, response_b, winner = chosen, rejected, "a"
         else:
@@ -128,6 +162,16 @@ def from_pairs(
     ``winners`` entries are ``"a"``, ``"b"`` or ``"tie"``; omit for unlabeled
     data (e.g. inference or pseudo-labeling inputs).
     """
+    lengths = {
+        "prompts": len(prompts),
+        "responses_a": len(responses_a),
+        "responses_b": len(responses_b),
+    }
+    if len(set(lengths.values())) != 1:
+        raise ValueError(
+            "prompts, responses_a and responses_b must have the same length, got "
+            + ", ".join(f"{name}={length}" for name, length in lengths.items())
+        )
     df = pd.DataFrame(
         {
             "prompt": [[p] for p in prompts],
@@ -137,6 +181,11 @@ def from_pairs(
     )
     if winners is not None:
         winners = list(winners)
+        if len(winners) != len(df):
+            raise ValueError(
+                f"winners must match the pair count, got {len(winners)} winners "
+                f"for {len(df)} pairs"
+            )
         bad = sorted({w for w in winners} - {"a", "b", "tie"})
         if bad:
             raise ValueError(f"winners must be 'a', 'b' or 'tie', got {bad}")

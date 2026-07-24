@@ -53,9 +53,15 @@ The medal recipe is a two-phase semi-supervised loop: train on human labels → 
 ## Install
 
 ```bash
-pip install -e .              # core: packing + data loaders (no torch needed)
-pip install -e .[judge]       # + inference (torch, transformers)
-pip install -e .[train]       # + LoRA fine-tuning (peft, datasets, accelerate)
+pip install pairjudge             # core: packing + data loaders (no torch)
+pip install "pairjudge[judge]"    # + inference (torch, transformers)
+pip install "pairjudge[train]"    # + LoRA training (peft, datasets, accelerate)
+```
+
+For an editable source checkout:
+
+```bash
+pip install -e ".[train]"
 ```
 
 ## 60 seconds
@@ -98,6 +104,10 @@ python -m pairjudge.training --cfg examples/configs/reproduce_competition.yaml
 ```
 
 Input is either an Arena-format CSV (the Kaggle competition schema) or a parquet with canonical columns — `prompt` / `response_a` / `response_b` as per-round string lists plus one-hot (or soft) `winner_*` columns. `pairjudge.data` ships loaders for Arena CSVs and UltraFeedback-style chosen/rejected data, plus `from_pairs()` for plain Python lists.
+
+Hard labels are validated as strict one-hot values. Soft labels must be finite,
+non-negative probability distributions that sum to one; malformed batches fail
+before training rather than being silently truncated or relabeled.
 
 The full two-phase distillation loop:
 

@@ -1,5 +1,6 @@
 import random
 
+import numpy as np
 import pytest
 
 from pairjudge import PackerConfig, PairPacker, hard_label
@@ -66,9 +67,7 @@ class TestBudgetInvariants:
         push response B (or the prompt) out of the packed sequence."""
         cfg = PackerConfig(max_length=256)
         packer = PairPacker(tokenizer, cfg)
-        packed = packer.pack(
-            ["short prompt"], ["A" * 5000], ["unique-b-content"]
-        )
+        packed = packer.pack(["short prompt"], ["A" * 5000], ["unique-b-content"])
         decoded = packed.input_ids
         b_marker = tokenizer("### Response B:", add_special_tokens=False)["input_ids"]
         as_str = ",".join(map(str, decoded))
@@ -142,10 +141,45 @@ class TestValidation:
             PackerConfig(ratios=(0.5, 0.5, 0.5))
         with pytest.raises(ValueError, match="3 entries"):
             PackerConfig(ratios=(0.5, 0.5))
+        with pytest.raises(ValueError, match="non-negative"):
+            PackerConfig(ratios=(-1.0, 1.0, 1.0))
+        with pytest.raises(ValueError, match="finite"):
+            PackerConfig(ratios=(np.nan, 0.5, 0.5))
+        with pytest.raises(ValueError, match="sum to"):
+            PackerConfig(ratios=(0.0, 0.0, 0.0))
+
+    def test_bad_min_tail_budget(self):
+        with pytest.raises(ValueError, match="min_tail_budget"):
+            PackerConfig(min_tail_budget=-1)
 
     def test_bad_label_mode(self, tokenizer):
         with pytest.raises(ValueError, match="label_mode"):
             PairPacker(tokenizer, label_mode="onehot")
+
+    def test_mapper_rejects_mismatched_pair_batch_lengths(self, tokenizer):
+        packer = PairPacker(tokenizer)
+        with pytest.raises(ValueError, match="same length"):
+            packer(
+                {
+                    "prompt": [["q1"], ["q2"]],
+                    "response_a": [["a1"]],
+                    "response_b": [["b1"], ["b2"]],
+                }
+            )
+
+    def test_mapper_rejects_mismatched_winner_batch_lengths(self, tokenizer):
+        packer = PairPacker(tokenizer)
+        with pytest.raises(ValueError, match="winner columns"):
+            packer(
+                {
+                    "prompt": [["q1"], ["q2"]],
+                    "response_a": [["a1"], ["a2"]],
+                    "response_b": [["b1"], ["b2"]],
+                    "winner_model_a": [1.0],
+                    "winner_model_b": [0.0],
+                    "winner_tie": [0.0],
+                }
+            )
 
 
 class TestLabels:
@@ -153,6 +187,30 @@ class TestLabels:
         assert hard_label(1, 0) == 0
         assert hard_label(0, 1) == 1
         assert hard_label(0, 0) == 2  # tie
+        assert hard_label(0, 0, 1) == 2
+
+    @pytest.mark.parametrize(
+        "values",
+        [
+            (1.0, 1.0, 0.0),
+            (0.0, 0.0, 0.0),
+            (0.5, 0.5, 0.0),
+            (float("nan"), 0.0, 1.0),
+        ],
+    )
+    def test_invalid_hard_labels_rejected(self, tokenizer, values):
+        packer = PairPacker(tokenizer, label_mode="hard")
+        with pytest.raises(ValueError, match="invalid hard winner labels"):
+            packer(
+                {
+                    "prompt": [["q"]],
+                    "response_a": [["a"]],
+                    "response_b": [["b"]],
+                    "winner_model_a": [values[0]],
+                    "winner_model_b": [values[1]],
+                    "winner_tie": [values[2]],
+                }
+            )
 
     def test_mapper_soft_labels(self, tokenizer):
         packer = PairPacker(tokenizer, label_mode="soft")
@@ -167,6 +225,28 @@ class TestLabels:
             }
         )
         assert out["labels"] == [[0.7, 0.2, 0.1]]
+
+    @pytest.mark.parametrize(
+        "values",
+        [
+            (-0.1, 0.6, 0.5),
+            (0.7, 0.2, 0.2),
+            (float("inf"), 0.0, 0.0),
+        ],
+    )
+    def test_invalid_soft_labels_rejected(self, tokenizer, values):
+        packer = PairPacker(tokenizer, label_mode="soft")
+        with pytest.raises(ValueError, match="invalid soft winner labels"):
+            packer(
+                {
+                    "prompt": [["q"]],
+                    "response_a": [["a"]],
+                    "response_b": [["b"]],
+                    "winner_model_a": [values[0]],
+                    "winner_model_b": [values[1]],
+                    "winner_tie": [values[2]],
+                }
+            )
 
     def test_mapper_label_mode_none(self, tokenizer):
         packer = PairPacker(tokenizer, label_mode="none")

@@ -49,9 +49,17 @@ class TestLoadArenaCsv:
 
         # one-sided empty rows are relabeled: non-empty side wins
         row2 = df[df["id"] == "2"].iloc[0]
-        assert (row2["winner_model_a"], row2["winner_model_b"], row2["winner_tie"]) == (0.0, 1.0, 0.0)
+        assert (row2["winner_model_a"], row2["winner_model_b"], row2["winner_tie"]) == (
+            0.0,
+            1.0,
+            0.0,
+        )
         row5 = df[df["id"] == "5"].iloc[0]
-        assert (row5["winner_model_a"], row5["winner_model_b"], row5["winner_tie"]) == (1.0, 0.0, 0.0)
+        assert (row5["winner_model_a"], row5["winner_model_b"], row5["winner_tie"]) == (
+            1.0,
+            0.0,
+            0.0,
+        )
 
     def test_json_columns_decoded(self, arena_df):
         df = load_arena_csv(arena_df)
@@ -106,6 +114,37 @@ class TestLoadUltrafeedback:
         b = load_ultrafeedback(uf_df, seed=0)
         pd.testing.assert_frame_equal(a, b)
 
+    def test_uses_last_assistant_message(self):
+        def conv(first, final):
+            return [
+                {"role": "system", "content": "system"},
+                {"role": "user", "content": "first prompt"},
+                {"role": "assistant", "content": first},
+                {"role": "user", "content": "follow-up"},
+                {"role": "assistant", "content": final},
+            ]
+
+        source = pd.DataFrame(
+            {
+                "prompt": ["p"],
+                "chosen": [conv("old chosen", "final chosen")],
+                "rejected": [conv("old rejected", "final rejected")],
+            }
+        )
+        row = load_ultrafeedback(source, seed=0).iloc[0]
+        assert {row["response_a"][0], row["response_b"][0]} == {
+            "final chosen",
+            "final rejected",
+        }
+
+    def test_missing_assistant_message_rejected(self):
+        messages = [[{"role": "user", "content": "question"}]]
+        source = pd.DataFrame(
+            {"prompt": ["p"], "chosen": messages, "rejected": messages}
+        )
+        with pytest.raises(ValueError, match="no assistant message"):
+            load_ultrafeedback(source)
+
 
 class TestFromPairs:
     def test_winner_mapping(self):
@@ -120,6 +159,14 @@ class TestFromPairs:
     def test_invalid_winner_rejected(self):
         with pytest.raises(ValueError, match="winners"):
             from_pairs(["q"], ["a"], ["b"], winners=["c"])
+
+    def test_mismatched_pair_lengths_rejected(self):
+        with pytest.raises(ValueError, match="same length"):
+            from_pairs(["q1", "q2"], ["a1"], ["b1", "b2"])
+
+    def test_mismatched_winner_length_rejected(self):
+        with pytest.raises(ValueError, match="pair count"):
+            from_pairs(["q1", "q2"], ["a1", "a2"], ["b1", "b2"], winners=["a"])
 
 
 class TestGuardrailMasks:

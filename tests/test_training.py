@@ -26,6 +26,23 @@ class TestConfig:
         cfg_file.write_text("")
         assert load_config(str(cfg_file)) == JudgeTrainConfig()
 
+    @pytest.mark.parametrize(
+        ("kwargs", "message"),
+        [
+            ({"label_mode": "none"}, "label_mode"),
+            ({"eval_holdout": 0.0}, "eval_holdout"),
+            ({"eval_holdout": 1.0}, "eval_holdout"),
+            ({"max_length": 0}, "max_length"),
+            ({"lr": 0.0}, "lr"),
+            ({"num_workers": -1}, "num_workers"),
+            ({"lora_dropout": 1.0}, "lora_dropout"),
+            ({"lora_target_modules": []}, "lora_target_modules"),
+        ],
+    )
+    def test_invalid_values_rejected(self, kwargs, message):
+        with pytest.raises(ValueError, match=message):
+            JudgeTrainConfig(**kwargs)
+
 
 class TestSoftKLLoss:
     def test_matches_hand_computed_kl(self):
@@ -76,3 +93,7 @@ class TestComputeMetrics:
         labels = np.array([[0.9, 0.05, 0.05]])
         metrics = compute_metrics(self._Preds(preds, labels))
         assert metrics["acc"] == 1.0
+        exp = np.exp(preds - preds.max(axis=-1, keepdims=True))
+        probs = exp / exp.sum(axis=-1, keepdims=True)
+        expected = -float(np.sum(labels * np.log(probs)))
+        assert metrics["log_loss"] == pytest.approx(expected)

@@ -31,6 +31,7 @@ tokenizer does).
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -78,10 +79,20 @@ class PackerConfig:
     def __post_init__(self) -> None:
         if len(self.ratios) != 3:
             raise ValueError(f"ratios must have 3 entries, got {len(self.ratios)}")
-        if sum(self.ratios) > 1.0 + 1e-9:
-            raise ValueError(f"ratios must sum to <= 1.0, got {sum(self.ratios)}")
+        try:
+            ratios = tuple(float(value) for value in self.ratios)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("ratios must contain numeric values") from exc
+        if any(not math.isfinite(value) or value < 0.0 for value in ratios):
+            raise ValueError("ratios must contain finite, non-negative values")
+        total = sum(ratios)
+        if total <= 0.0 or total > 1.0 + 1e-9:
+            raise ValueError(f"ratios must sum to <= 1.0 and be > 0.0, got {total}")
+        self.ratios = ratios
         if self.max_length <= 0:
             raise ValueError("max_length must be positive")
+        if self.min_tail_budget < 0:
+            raise ValueError("min_tail_budget must be non-negative")
 
 
 @dataclass
@@ -124,7 +135,9 @@ class PairPacker:
         label_mode: str = "hard",
     ):
         if label_mode not in ("hard", "soft", "none"):
-            raise ValueError(f"label_mode must be 'hard', 'soft' or 'none', got {label_mode!r}")
+            raise ValueError(
+                f"label_mode must be 'hard', 'soft' or 'none', got {label_mode!r}"
+            )
         self.tokenizer = tokenizer
         self.config = config or PackerConfig()
         self.label_mode = label_mode
@@ -186,7 +199,9 @@ class PairPacker:
             ra_tokens = self._encode(cfg.response_a_prefix.format(text=ra))
             rb_tokens = self._encode(cfg.response_b_prefix.format(text=rb))
 
-            total = used + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens)
+            total = (
+                used + len(r_tokens) + len(p_tokens) + len(ra_tokens) + len(rb_tokens)
+            )
             if total <= cfg.max_length:
                 input_ids += r_tokens + p_tokens + ra_tokens + rb_tokens
                 used = total
@@ -234,6 +249,19 @@ class PairPacker:
         (``label_mode="hard"``) or ``[p_a, p_b, p_tie]`` float distributions
         (``label_mode="soft"``, used for pseudo-label distillation).
         """
+        pair_columns = ("prompt", "response_a", "response_b")
+        missing = [column for column in pair_columns if column not in example]
+        if missing:
+            raise ValueError(f"missing required batch columns: {missing}")
+        pair_lengths = {column: len(example[column]) for column in pair_columns}
+        if len(set(pair_lengths.values())) != 1:
+            raise ValueError(
+                "batched prompt/response columns must have the same length, got "
+                + ", ".join(
+                    f"{column}={length}" for column, length in pair_lengths.items()
+                )
+            )
+
         input_ids = []
         attention_mask = []
         for ps, ras, rbs in zip(
@@ -247,21 +275,99 @@ class PairPacker:
             "input_ids": input_ids,
             "attention_mask": attention_mask,
         }
-        if self.label_mode != "none" and "winner_model_a" in example:
-            winners = zip(
-                example["winner_model_a"],
-                example["winner_model_b"],
-                example["winner_tie"],
+        winner_columns = ("winner_model_a", "winner_model_b", "winner_tie")
+        winner_presence = [column in example for column in winner_columns]
+        if self.label_mode != "none" and any(winner_presence):
+            if not all(winner_presence):
+                missing = [
+                    column
+                    for column, present in zip(winner_columns, winner_presence)
+                    if not present
+                ]
+                raise ValueError(f"missing winner batch columns: {missing}")
+            winner_lengths = {column: len(example[column]) for column in winner_columns}
+            expected = pair_lengths["prompt"]
+            if any(length != expected for length in winner_lengths.values()):
+                raise ValueError(
+                    "winner columns must match the pair batch length, got "
+                    + ", ".join(
+                        f"{column}={length}"
+                        for column, length in winner_lengths.items()
+                    )
+                    + f", pairs={expected}"
+                )
+            winners = list(
+                zip(
+                    example["winner_model_a"],
+                    example["winner_model_b"],
+                    example["winner_tie"],
+                )
             )
             if self.label_mode == "hard":
-                out["labels"] = [hard_label(a, b) for a, b, _ in winners]
+                labels = []
+                for index, (a, b, tie) in enumerate(winners):
+                    try:
+                        labels.append(hard_label(a, b, tie))
+                    except ValueError as exc:
+                        raise ValueError(
+                            f"invalid hard winner labels at batch index {index}: {exc}"
+                        ) from exc
+                out["labels"] = labels
             else:
-                out["labels"] = [
-                    [float(a), float(b), float(t)] for a, b, t in winners
-                ]
+                labels = []
+                for index, values in enumerate(winners):
+                    try:
+                        labels.append(_soft_label(*values))
+                    except ValueError as exc:
+                        raise ValueError(
+                            f"invalid soft winner labels at batch index {index}: {exc}"
+                        ) from exc
+                out["labels"] = labels
         return out
 
 
-def hard_label(winner_a: float, winner_b: float) -> int:
-    """Map winner indicators to a class index: 0 = A wins, 1 = B wins, 2 = tie."""
-    return 0 if winner_a else 1 if winner_b else 2
+def _probability_values(
+    winner_a: float,
+    winner_b: float,
+    winner_tie: float,
+) -> tuple[float, float, float]:
+    try:
+        values = (float(winner_a), float(winner_b), float(winner_tie))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("winner values must be numeric") from exc
+    if any(not math.isfinite(value) for value in values):
+        raise ValueError("winner values must be finite")
+    return values
+
+
+def _soft_label(
+    winner_a: float,
+    winner_b: float,
+    winner_tie: float,
+) -> List[float]:
+    values = _probability_values(winner_a, winner_b, winner_tie)
+    if any(value < 0.0 for value in values):
+        raise ValueError("soft winner values must be non-negative")
+    total = sum(values)
+    if not math.isclose(total, 1.0, rel_tol=1e-6, abs_tol=1e-6):
+        raise ValueError(f"soft winner values must sum to 1.0, got {total}")
+    return list(values)
+
+
+def hard_label(
+    winner_a: float,
+    winner_b: float,
+    winner_tie: Optional[float] = None,
+) -> int:
+    """Map one-hot winner indicators to 0 = A, 1 = B, or 2 = tie.
+
+    ``winner_tie`` is optional for backward compatibility with the original
+    two-indicator helper. When supplied, all three values are validated as a
+    strict one-hot label before conversion.
+    """
+    if winner_tie is None:
+        return 0 if winner_a else 1 if winner_b else 2
+    values = _probability_values(winner_a, winner_b, winner_tie)
+    if any(value not in (0.0, 1.0) for value in values) or sum(values) != 1.0:
+        raise ValueError(f"hard winner values must be one-hot, got {values}")
+    return values.index(1.0)

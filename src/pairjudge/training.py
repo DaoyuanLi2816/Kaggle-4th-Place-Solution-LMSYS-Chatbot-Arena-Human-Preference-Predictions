@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -32,6 +33,9 @@ import yaml
 
 from .data import load_arena_csv
 from .packing import PackerConfig, PairPacker
+
+if TYPE_CHECKING:
+    import torch
 
 
 @dataclass
@@ -56,8 +60,13 @@ class JudgeTrainConfig:
     lora_dropout: float = 0.05
     lora_target_modules: List[str] = field(
         default_factory=lambda: [
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
         ]
     )
 
@@ -73,6 +82,36 @@ class JudgeTrainConfig:
     bf16: bool = True
     num_workers: int = 4
     merge_adapter: bool = True  # save a merged full model next to the adapter
+
+    def __post_init__(self) -> None:
+        if self.label_mode not in ("hard", "soft"):
+            raise ValueError(
+                f"label_mode must be 'hard' or 'soft', got {self.label_mode!r}"
+            )
+        if not math.isfinite(self.eval_holdout) or not 0.0 < self.eval_holdout < 1.0:
+            raise ValueError("eval_holdout must be between 0.0 and 1.0")
+        positive = {
+            "max_length": self.max_length,
+            "n_epochs": self.n_epochs,
+            "lr": self.lr,
+            "per_device_train_batch_size": self.per_device_train_batch_size,
+            "per_device_eval_batch_size": self.per_device_eval_batch_size,
+            "gradient_accumulation_steps": self.gradient_accumulation_steps,
+        }
+        for name, value in positive.items():
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be positive")
+        if self.warmup_steps < 0:
+            raise ValueError("warmup_steps must be non-negative")
+        if self.num_workers < 0:
+            raise ValueError("num_workers must be non-negative")
+        if self.use_lora:
+            if self.lora_r <= 0 or self.lora_alpha <= 0:
+                raise ValueError("lora_r and lora_alpha must be positive")
+            if not 0.0 <= self.lora_dropout < 1.0:
+                raise ValueError("lora_dropout must be in [0.0, 1.0)")
+            if not self.lora_target_modules:
+                raise ValueError("lora_target_modules must not be empty")
 
 
 def load_config(path: str) -> JudgeTrainConfig:
@@ -102,13 +141,20 @@ def compute_metrics(eval_preds) -> Dict[str, float]:
     from sklearn.metrics import accuracy_score, log_loss
 
     preds, labels = eval_preds.predictions, eval_preds.label_ids
-    if labels.ndim > 1 and labels.shape[-1] == 3:
-        labels = labels.argmax(-1)
     exp = np.exp(preds - preds.max(axis=-1, keepdims=True))
     probs = exp / exp.sum(axis=-1, keepdims=True)
+    is_soft = labels.ndim > 1 and labels.shape[-1] == 3
+    if is_soft:
+        soft_labels = labels.astype(np.float64)
+        clipped = np.clip(probs.astype(np.float64), 1e-15, 1.0)
+        loss = float(-np.mean(np.sum(soft_labels * np.log(clipped), axis=-1)))
+        hard_labels = labels.argmax(-1)
+    else:
+        hard_labels = labels
+        loss = float(log_loss(labels, probs, labels=[0, 1, 2]))
     return {
-        "log_loss": log_loss(y_true=labels, y_pred=probs, labels=[0, 1, 2]),
-        "acc": accuracy_score(y_true=labels, y_pred=preds.argmax(-1)),
+        "log_loss": loss,
+        "acc": accuracy_score(y_true=hard_labels, y_pred=preds.argmax(-1)),
     }
 
 
@@ -162,7 +208,6 @@ def build_model_and_tokenizer(cfg: JudgeTrainConfig):
 
 def train(cfg: JudgeTrainConfig) -> Dict[str, Any]:
     """Train a judge end to end; returns the final eval metrics."""
-    import torch
     from datasets import Dataset
     from transformers import (
         DataCollatorWithPadding,
@@ -192,8 +237,7 @@ def train(cfg: JudgeTrainConfig) -> Dict[str, Any]:
         remove_columns=[
             c
             for c in ds.column_names
-            if c
-            not in ("input_ids", "attention_mask", "labels")
+            if c not in ("input_ids", "attention_mask", "labels")
         ],
     )
     split = ds.train_test_split(test_size=cfg.eval_holdout, seed=cfg.seed)
@@ -216,6 +260,7 @@ def train(cfg: JudgeTrainConfig) -> Dict[str, Any]:
         save_strategy="epoch",
         metric_for_best_model="log_loss",
         greater_is_better=False,
+        load_best_model_at_end=True,
         dataloader_num_workers=cfg.num_workers,
     )
 
@@ -246,9 +291,7 @@ def _build_soft_label_trainer():
     class SoftLabelTrainer(Trainer):
         """Trainer whose loss is KL against a soft label distribution."""
 
-        def compute_loss(
-            self, model, inputs, return_outputs=False, **kwargs
-        ):
+        def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
             labels = inputs.pop("labels")
             outputs = model(**inputs)
             loss = soft_kl_loss(outputs.logits, labels)

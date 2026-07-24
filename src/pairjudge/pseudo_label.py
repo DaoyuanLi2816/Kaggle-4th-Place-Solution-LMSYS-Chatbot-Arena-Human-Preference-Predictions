@@ -21,6 +21,7 @@ Run from the command line::
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
@@ -47,7 +48,9 @@ def pseudo_label(
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, help="Trained judge (path or hub id)")
-    parser.add_argument("--data", required=True, help="Canonical-schema parquet to label")
+    parser.add_argument(
+        "--data", required=True, help="Canonical-schema parquet to label"
+    )
     parser.add_argument("--out", required=True, help="Output parquet path")
     parser.add_argument("--max-length", type=int, default=3072)
     parser.add_argument("--batch-size", type=int, default=4)
@@ -68,8 +71,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     out = pseudo_label(
         judge, df, batch_size=args.batch_size, swap_debias=args.swap_debias
     )
-    out.to_parquet(args.out)
-    print(f"Wrote {len(out)} pseudo-labeled rows to {args.out}")
+    output_path = Path(args.out)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(output_path, index=False)
+    print(f"Wrote {len(out)} pseudo-labeled rows to {output_path}")
 
 
 if __name__ == "__main__":

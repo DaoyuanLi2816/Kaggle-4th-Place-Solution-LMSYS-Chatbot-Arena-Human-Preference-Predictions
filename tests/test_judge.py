@@ -84,10 +84,7 @@ class TestForwardOrderRestoration:
                         [x + [0] * (longest - len(x)) for x in ids]
                     ),
                     "attention_mask": torch.tensor(
-                        [
-                            m + [0] * (longest - len(m))
-                            for m in inputs["attention_mask"]
-                        ]
+                        [m + [0] * (longest - len(m)) for m in inputs["attention_mask"]]
                     ),
                 }
 
@@ -112,3 +109,48 @@ class TestForwardOrderRestoration:
         # prediction landed back on its own row.
         order_by_len = np.argsort([40, 5, 90, 20, 60])
         assert list(np.argsort(proba[:, 0])) == list(order_by_len)
+
+
+class TestInferenceValidation:
+    @staticmethod
+    def _frame(rows=0):
+        import pandas as pd
+
+        return pd.DataFrame(
+            {
+                "prompt": [["q"]] * rows,
+                "response_a": [["a"]] * rows,
+                "response_b": [["b"]] * rows,
+            }
+        )
+
+    def test_empty_frame_returns_empty_probabilities(self, tokenizer):
+        pytest.importorskip("torch")
+        from pairjudge.judge import PairwiseJudge
+
+        judge = PairwiseJudge(object(), tokenizer)
+        proba = judge.predict_proba(self._frame())
+        assert proba.shape == (0, 3)
+        assert proba.dtype == np.float32
+
+    def test_empty_frame_with_swap_debias(self, tokenizer):
+        pytest.importorskip("torch")
+        from pairjudge.judge import PairwiseJudge
+
+        judge = PairwiseJudge(object(), tokenizer)
+        assert judge.predict_proba(self._frame(), swap_debias=True).shape == (0, 3)
+
+    def test_non_positive_batch_size_rejected(self, tokenizer):
+        pytest.importorskip("torch")
+        from pairjudge.judge import PairwiseJudge
+
+        judge = PairwiseJudge(object(), tokenizer)
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            judge.predict_proba(self._frame(1), batch_size=0)
+
+    def test_empty_flip_rate_rejected(self, tokenizer):
+        from pairjudge.judge import PairwiseJudge
+
+        judge = PairwiseJudge(object(), tokenizer)
+        with pytest.raises(ValueError, match="at least one row"):
+            judge.position_flip_rate(self._frame())

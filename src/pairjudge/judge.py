@@ -118,11 +118,17 @@ class PairwiseJudge:
     def _forward(self, frame: pd.DataFrame, batch_size: int) -> np.ndarray:
         import torch
 
+        if batch_size <= 0:
+            raise ValueError(f"batch_size must be positive, got {batch_size}")
+        if frame.empty:
+            return np.empty((0, len(CLASSES)), dtype=np.float32)
+
         try:
             from transformers.data.data_collator import (
                 pad_without_fast_tokenizer_warning,
             )
         except ImportError:  # private helper; fall back to the public API
+
             def pad_without_fast_tokenizer_warning(tokenizer, inputs, **kwargs):
                 return tokenizer.pad(inputs, **kwargs)
 
@@ -187,6 +193,8 @@ class PairwiseJudge:
         bias diagnostic before deciding whether ``swap_debias`` is worth the
         2x compute.
         """
+        if df.empty:
+            raise ValueError("position_flip_rate requires at least one row")
         proba = self._forward(self._pack_frame(df), batch_size)
         aligned = self._swapped_proba(df, batch_size)[:, list(SWAP_PERMUTATION)]
         return float((proba.argmax(-1) != aligned.argmax(-1)).mean())
