@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pairjudge"
-version = "0.1.2"
+version = "0.2.0"
 description = "Train and serve pairwise LLM judges (A/B/tie) with budget-aware multi-turn packing and position-bias correction"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Daoyuan Li", email = "lidaoyuan2816@gmail.com" }]
 keywords = [
     "llm-as-judge",
@@ -20,13 +20,13 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -49,14 +49,37 @@ train = [
     "accelerate",
     "scikit-learn",
 ]
-test = ["pytest", "torch", "transformers>=4.46", "scikit-learn"]
+test = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "torch",
+    "transformers>=4.46",
+    "scikit-learn",
+]
 
 [project.urls]
 Homepage = "https://github.com/DaoyuanLi2816/pairjudge"
+Repository = "https://github.com/DaoyuanLi2816/pairjudge"
 Issues = "https://github.com/DaoyuanLi2816/pairjudge/issues"
+Changelog = "https://github.com/DaoyuanLi2816/pairjudge/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+exclude = ["competition", "tests/reference_impl.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.coverage.run]
+source = ["pairjudge"]
+
+[tool.coverage.report]
+show_missing = true

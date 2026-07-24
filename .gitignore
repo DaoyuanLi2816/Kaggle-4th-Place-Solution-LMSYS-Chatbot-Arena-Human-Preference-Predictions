@@ -16,6 +16,8 @@ venv/
 dist/
 build/
 .pytest_cache/
+.coverage
+htmlcov/
 
 # experiment artifacts
 input/

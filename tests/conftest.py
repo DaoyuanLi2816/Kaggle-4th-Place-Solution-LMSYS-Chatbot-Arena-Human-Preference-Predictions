@@ -32,9 +32,13 @@ def random_conversation(rng: random.Random, max_rounds: int = 5):
         if kind < 0.15:
             return ""  # empty field
         if kind < 0.5:
-            return "".join(rng.choice("abcdefgh \n.,!?") for _ in range(rng.randint(1, 60)))
+            return "".join(
+                rng.choice("abcdefgh \n.,!?") for _ in range(rng.randint(1, 60))
+            )
         # long fields force the truncation branch
-        return "".join(rng.choice("abcdefgh 测试😀\n") for _ in range(rng.randint(200, 3000)))
+        return "".join(
+            rng.choice("abcdefgh 测试😀\n") for _ in range(rng.randint(200, 3000))
+        )
 
     return (
         [text() for _ in range(n_rounds)],
